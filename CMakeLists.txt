@@ -1,1 +1,6 @@
-idf_component_register(SRCS "main.c" INCLUDE_DIRS "include")
+if(${IDF_VERSION_MAJOR} STREQUAL 6)
+    set(requires esp_driver_rmt esp_driver_gpio esp_event)
+else()
+    set(requires driver esp_event)
+endif()
+idf_component_register(SRCS "zh_ttp229.c" INCLUDE_DIRS "include" REQUIRES ${requires})

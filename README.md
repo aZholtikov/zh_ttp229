@@ -10,7 +10,7 @@
 
 ## Features
 
-1. Support up to 4 touch pads on one device.
+1. Support up to 4 touch pads on one device (depends on the used ESP32 chip).
 2. Support 8 or 16 pad work mode.
 
 ## Note

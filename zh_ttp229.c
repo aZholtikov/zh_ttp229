@@ -163,7 +163,11 @@ static esp_err_t _zh_ttp229_rmt_init(const zh_ttp229_init_config_t *config, zh_t
     rmt_tx_channel_config_t tx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .gpio_num = config->scl_gpio,
+#if defined CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S2
         .mem_block_symbols = 64,
+#else
+        .mem_block_symbols = 48,
+#endif
         .resolution_hz = 1000000,
         .trans_queue_depth = 4,
         .flags.init_level = 1,
@@ -178,7 +182,11 @@ static esp_err_t _zh_ttp229_rmt_init(const zh_ttp229_init_config_t *config, zh_t
     rmt_rx_channel_config_t rx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .gpio_num = config->sdo_gpio,
+#if defined CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S2
         .mem_block_symbols = 64,
+#else
+        .mem_block_symbols = 48,
+#endif
         .resolution_hz = 1000000,
     };
     ZH_ERROR_CHECK(rmt_new_rx_channel(&rx_chan_config, &handle->rx_channel) == ESP_OK, ESP_FAIL,

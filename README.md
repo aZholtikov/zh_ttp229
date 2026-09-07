@@ -1,26 +1,27 @@
 # ESP32 ESP-IDF component for TTP229 touch pad (via RMT driver)
 
-## Tested on
-
-1. [ESP32 ESP-IDF v6.0.0](https://docs.espressif.com/projects/esp-idf/en/v6.0/esp32/index.html)
-
 ## SAST Tools
 
 [PVS-Studio](https://pvs-studio.com/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) - static analyzer for C, C++, C#, and Java code.
 
 ## Features
 
-1. Support up to 4 touch pads on one device (depends on the used ESP32 chip).
-2. Support 8 or 16 pad work mode.
+1. Support for 8-pad and 16-pad TTP229 configurations.
+2. RMT-based SPI-like communication without GPIO bit-banging.
+3. Multi-device support with unique device numbering.
+4. FreeRTOS task for debouncing and event dispatching.
+5. Error statistics tracking (RMT driver, event post, queue overflow, stack).
+6. Event-based API via esp_event framework.
+7. IRAM-safe ISR handler and RMT callback.
 
-## Note
+## Attention
 
 1. After start/reset first touch not work.
 2. Multi touch not supported.
 
-## Attention
+## Note
 
-1. For correct operation, please enable the following settings in the menuconfig:
+Enable the following settings in menuconfig:
 
 ```text
 CONFIG_GPIO_CTRL_FUNC_IN_IRAM
@@ -36,7 +37,7 @@ CONFIG_RMT_RX_ISR_CACHE_SAFE
 
 In an existing project, run the following command to install the components:
 
-```text
+```bash
 cd ../your_project/components
 git clone https://github.com/aZholtikov/zh_ttp229
 ```
@@ -47,16 +48,14 @@ In the application, add the component:
 #include "zh_ttp229.h"
 ```
 
-## Examples
-
-One touch pad on device:
+## Example
 
 ```c
 #include "zh_ttp229.h"
 
 #define TTP229_NUMBER 0x01
 
-zh_ttp229_handle_t ttp229_handle = {0};
+zh_ttp229_handle_t *ttp229_handle = NULL;
 
 void zh_ttp229_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 

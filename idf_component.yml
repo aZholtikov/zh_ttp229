@@ -1,0 +1,11 @@
+description: ESP32 ESP-IDF component for TTP229 touch pad (via RMT driver)
+url: https://github.com/aZholtikov/zh_ttp229
+version: "2.0.0"
+license: "Apache-2.0"
+maintainers:
+  - "Alexey Zholtikov <alexey.zholtikov@yandex.ru>"
+dependencies:
+  idf: ">=5.0"
+  zh_vector:
+    git: "https://github.com/aZholtikov/zh_vector.git"
+    version: "dev"

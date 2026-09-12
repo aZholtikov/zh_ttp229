@@ -154,7 +154,7 @@ static bool _zh_ttp229_rmt_rx_done_callback(rmt_channel_handle_t channel, const 
 
 ESP_EVENT_DEFINE_BASE(ZH_TTP229);
 
-esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t **handle) // -V2008
+esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t **handle)
 {
     ZH_LOGI("Touch pad initialization started.");
     ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Touch pad initialization failed. Invalid argument.");
@@ -189,7 +189,7 @@ esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle
     return ESP_OK;
 }
 
-esp_err_t zh_ttp229_deinit(zh_ttp229_handle_t **handle) // -V2008
+esp_err_t zh_ttp229_deinit(zh_ttp229_handle_t **handle)
 {
     ZH_LOGI("Touch pad deinitialization started.");
     ZH_ERROR_CHECK(handle != NULL && *handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Touch pad deinitialization failed. Invalid argument.");
@@ -234,7 +234,7 @@ void zh_ttp229_reset_stats(void)
     ZH_LOGI("Error statistic reset successfully.");
 }
 
-static esp_err_t _zh_ttp229_validate_config(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle) // -V2008
+static esp_err_t _zh_ttp229_validate_config(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle)
 {
     ZH_ERROR_CHECK(config->task_priority >= 1 && config->stack_size >= configMINIMAL_STACK_SIZE, ESP_ERR_INVALID_ARG, NULL, "Invalid task settings.");
     ZH_ERROR_CHECK(config->queue_size >= 1, ESP_ERR_INVALID_ARG, NULL, "Invalid queue size.");
@@ -253,7 +253,7 @@ static esp_err_t _zh_ttp229_validate_config(const zh_ttp229_init_config_t *confi
     return ESP_OK;
 }
 
-static esp_err_t _zh_ttp229_gpio_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle) // -V2008
+static esp_err_t _zh_ttp229_gpio_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle)
 {
     ZH_ERROR_CHECK(config->scl_gpio < GPIO_NUM_MAX && config->sdo_gpio < GPIO_NUM_MAX, ESP_ERR_INVALID_ARG, NULL, "Invalid GPIO number.")
     ZH_ERROR_CHECK(config->scl_gpio != config->sdo_gpio, ESP_ERR_INVALID_ARG, NULL, "SCL GPIO and SDO GPIO is same.")
@@ -271,7 +271,7 @@ static esp_err_t _zh_ttp229_gpio_init(const zh_ttp229_init_config_t *config, zh_
     return ESP_OK;
 }
 
-static esp_err_t _zh_ttp229_rmt_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle) // -V2008
+static esp_err_t _zh_ttp229_rmt_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle)
 {
     rmt_tx_channel_config_t tx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
@@ -376,7 +376,7 @@ static void IRAM_ATTR _zh_ttp229_isr_handler(void *arg)
     portYIELD_FROM_ISR();
 }
 
-static void IRAM_ATTR _zh_ttp229_isr_processing_task(void *pvParameter) // -V2008
+static void IRAM_ATTR _zh_ttp229_isr_processing_task(void *pvParameter)
 {
     (void)pvParameter;
     zh_ttp229_queue_t ttp229_queue = {0};

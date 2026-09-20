@@ -128,6 +128,7 @@ extern "C"
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG if config or handle is NULL, or if any configuration value is out of range
      * @return ESP_ERR_INVALID_STATE if the device is already initialized
+     * @return ESP_ERR_NO_MEM if memory allocation fails
      * @return ESP_FAIL on resource allocation or peripheral failure
      */
     esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t **handle);

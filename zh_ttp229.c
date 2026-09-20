@@ -160,6 +160,7 @@ esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle
     ZH_ERROR_CHECK(config != NULL && handle != NULL, ESP_ERR_INVALID_ARG, NULL, "Touch pad initialization failed. Invalid argument.");
     ZH_ERROR_CHECK(*handle == NULL, ESP_ERR_INVALID_STATE, NULL, "Touch pad initialization failed. Touch pad is already initialized.");
     *handle = heap_caps_calloc(1, sizeof(zh_ttp229_handle_t), MALLOC_CAP_8BIT);
+    ZH_ERROR_CHECK(*handle != NULL, ESP_ERR_NO_MEM, NULL, "Touch pad initialization failed. Failed to allocate touch pad handle.");
     ZH_ERROR_CHECK(_zh_ttp229_validate_config(config, *handle) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Initial configuration check failed.");
     if (_vector == NULL)
     {

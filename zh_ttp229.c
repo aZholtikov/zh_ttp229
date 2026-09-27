@@ -21,7 +21,8 @@ static const char *TAG = "zh_ttp229";
         continue;                                    \
     }
 
-/** @brief Internal handle for a single TTP229 device instance.
+/**
+ * @brief Internal handle for a single TTP229 device instance.
  *
  * Fields are initialized by zh_ttp229_init() and used by the
  * ISR handler, processing task, and deinitialization.
@@ -39,7 +40,8 @@ struct _zh_ttp229_handle_t
     rmt_encoder_handle_t copy_encoder; /*!< Copy encoder handle for RMT TX */
 };
 
-/** @brief Queue entry passed from RMT RX callback to the ISR processing task.
+/**
+ * @brief Queue entry passed from RMT RX callback to the ISR processing task.
  *
  * Contains a pointer to the TTP229 device handle for the device
  * that triggered the interrupt.
@@ -54,7 +56,8 @@ static QueueHandle_t _queue_handle = NULL; /*!< Internal event queue */
 static zh_ttp229_stats_t _stats = {0};     /*!< Accumulated error and runtime statistics */
 static zh_vector_t *_vector = NULL;        /*!< Vector of device_number values for all initialized TTP229 devices */
 
-/** @brief Validate the user-provided initialization configuration.
+/**
+ * @brief Validate the user-provided initialization configuration.
  *
  * Checks all parameter ranges, ensures work_mode is valid, and
  * verifies device_number uniqueness across initialized devices.
@@ -67,7 +70,8 @@ static zh_vector_t *_vector = NULL;        /*!< Vector of device_number values f
  */
 static esp_err_t _zh_ttp229_validate_config(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle);
 
-/** @brief Configure GPIO for SDO input with positive-edge interrupt.
+/**
+ * @brief Configure GPIO for SDO input with positive-edge interrupt.
  *
  * Installs the ISR service if not yet installed, configures SDO as
  * input with GPIO_INTR_POSEDGE, and registers the ISR handler.
@@ -81,7 +85,8 @@ static esp_err_t _zh_ttp229_validate_config(const zh_ttp229_init_config_t *confi
  */
 static esp_err_t _zh_ttp229_gpio_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle);
 
-/** @brief Initialize RMT TX and RX channels with callbacks.
+/**
+ * @brief Initialize RMT TX and RX channels with callbacks.
  *
  * Creates TX channel on SCL GPIO, RX channel on SDO GPIO, allocates
  * the copy encoder, enables both channels, and registers the RX done
@@ -95,7 +100,8 @@ static esp_err_t _zh_ttp229_gpio_init(const zh_ttp229_init_config_t *config, zh_
  */
 static esp_err_t _zh_ttp229_rmt_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t *handle);
 
-/** @brief Create the shared event queue on first device initialization.
+/**
+ * @brief Create the shared event queue on first device initialization.
  *
  * The queue is created only when vector_size equals 1 (first device).
  *
@@ -106,7 +112,8 @@ static esp_err_t _zh_ttp229_rmt_init(const zh_ttp229_init_config_t *config, zh_t
  */
 static esp_err_t _zh_ttp229_resources_init(const zh_ttp229_init_config_t *config);
 
-/** @brief Create the ISR processing task on first device initialization.
+/**
+ * @brief Create the ISR processing task on first device initialization.
  *
  * The task is created only when vector_size equals 1 (first device).
  *
@@ -117,7 +124,8 @@ static esp_err_t _zh_ttp229_resources_init(const zh_ttp229_init_config_t *config
  */
 static esp_err_t _zh_ttp229_task_init(const zh_ttp229_init_config_t *config);
 
-/** @brief GPIO ISR handler triggered on SDO positive edge.
+/**
+ * @brief GPIO ISR handler triggered on SDO positive edge.
  *
  * Disables further interrupts, starts RMT receive on SDO, generates
  * SCL clock pulses via RMT transmit on SCL, and yields to higher
@@ -127,7 +135,8 @@ static esp_err_t _zh_ttp229_task_init(const zh_ttp229_init_config_t *config);
  */
 static void _zh_ttp229_isr_handler(void *arg);
 
-/** @brief FreeRTOS task that processes RMT RX data and posts events.
+/**
+ * @brief FreeRTOS task that processes RMT RX data and posts events.
  *
  * Receives queue entries from the RMT RX callback, decodes the pad
  * number from rx_symbols.duration1, posts a ZH_TTP229 event for
@@ -138,7 +147,8 @@ static void _zh_ttp229_isr_handler(void *arg);
  */
 static void _zh_ttp229_isr_processing_task(void *pvParameter);
 
-/** @brief RMT RX done callback that enqueues data to the processing task.
+/**
+ * @brief RMT RX done callback that enqueues data to the processing task.
  *
  * Sends a zh_ttp229_queue_t entry to _queue_handle. Increments
  * queue overflow error counter if the send fails.
@@ -353,17 +363,14 @@ static void IRAM_ATTR _zh_ttp229_isr_handler(void *arg)
     zh_ttp229_handle_t *ttp229_handle = (zh_ttp229_handle_t *)arg;
     gpio_intr_disable(ttp229_handle->sdo_gpio);
     rmt_receive_config_t rx_receive_config = {.signal_range_min_ns = 100, .signal_range_max_ns = 2000000};
-    // Start RMT reception on SDO to capture touch data
     if (rmt_receive(ttp229_handle->rx_channel, &ttp229_handle->rx_symbols, sizeof(ttp229_handle->rx_symbols), &rx_receive_config) != ESP_OK)
     {
         ++_stats.rmt_driver_error;
     }
-    // Toggle SDO: set output low then high to trigger the RMT RX start
     gpio_set_direction(ttp229_handle->sdo_gpio, GPIO_MODE_OUTPUT);
     gpio_set_level(ttp229_handle->sdo_gpio, 0);
     gpio_set_level(ttp229_handle->sdo_gpio, 1);
     gpio_set_direction(ttp229_handle->sdo_gpio, GPIO_MODE_INPUT);
-    // Generate SCL clock pulses via RMT transmit for the configured work mode
     rmt_symbol_word_t scl_symbols[ttp229_handle->work_mode];
     for (uint8_t i = 0; i < (uint8_t)ttp229_handle->work_mode; ++i)
     {
@@ -385,9 +392,6 @@ static void IRAM_ATTR _zh_ttp229_isr_processing_task(void *pvParameter)
     {
         zh_ttp229_handle_t *ttp229_handle = ttp229_queue.handle;
         uint8_t pad_number = 0;
-        // Decode pad number from duration1: each pad has a unique range
-        // of (rmt_tx_start_delay + offset) values, with offset increasing
-        // by 2 per pad (pad N uses offset 2*(N-1)+1, ±1 tolerance)
         if ((ttp229_handle->rx_symbols.duration1 == (ttp229_handle->rmt_tx_start_delay - 1)) ||
             (ttp229_handle->rx_symbols.duration1 == (ttp229_handle->rmt_tx_start_delay)) ||
             (ttp229_handle->rx_symbols.duration1 == (ttp229_handle->rmt_tx_start_delay + 1)))

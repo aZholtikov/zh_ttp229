@@ -74,15 +74,18 @@ extern "C"
      *
      * Use ZH_TTP229_INIT_CONFIG_DEFAULT() to obtain sensible defaults
      * and override only the fields that differ from defaults.
+     *
+     * @note Minimum values: stack_size >= configMINIMAL_STACK_SIZE, debounce_time >= 10 ms,
+     *       task_priority >= 1, queue_size >= 1, rmt_tx_start_delay >= 15 us, device_number > 0.
      */
     typedef struct
     {
-        uint16_t stack_size;             /*!< Task stack size in bytes. @note Minimum: configMINIMAL_STACK_SIZE */
-        uint16_t debounce_time;          /*!< Button debounce time in milliseconds. @note Minimum: 10 ms */
-        uint8_t task_priority;           /*!< FreeRTOS task priority. @note Minimum: 1 */
-        uint8_t queue_size;              /*!< Event queue depth. @note Minimum: 1 */
-        uint8_t device_number;           /*!< Unique device identifier. @note Must be > 0 */
-        uint8_t rmt_tx_start_delay;      /*!< RMT TX delay in microseconds after SDO interrupt. @note Minimum: 15 us */
+        uint16_t stack_size;             /*!< Task stack size in bytes */
+        uint16_t debounce_time;          /*!< Button debounce time in milliseconds */
+        uint8_t task_priority;           /*!< FreeRTOS task priority */
+        uint8_t queue_size;              /*!< Event queue depth */
+        uint8_t device_number;           /*!< Unique device identifier */
+        uint8_t rmt_tx_start_delay;      /*!< RMT TX delay in microseconds after SDO interrupt */
         gpio_num_t sdo_gpio;             /*!< SDO (Serial Data Out) GPIO pin */
         gpio_num_t scl_gpio;             /*!< SCL (Serial Clock) GPIO pin */
         zh_ttp229_work_mode_t work_mode; /*!< Touch pad configuration (8 or 16 pads) */

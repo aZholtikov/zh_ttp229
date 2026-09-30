@@ -174,7 +174,7 @@ esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle
     ZH_ERROR_CHECK(_zh_ttp229_validate_config(config, *handle) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Initial configuration check failed.");
     if (_vector == NULL)
     {
-        ZH_ERROR_CHECK(zh_vector_init(&_vector, sizeof(uint8_t)) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Failed to create vector.");
+        ZH_ERROR_CHECK(zh_vector_init(&_vector, (uint16_t)sizeof(uint8_t)) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Failed to create vector.");
     }
     ZH_ERROR_CHECK(zh_vector_push_back(&_vector, &config->device_number) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Failed to add vector data.");
     ZH_ERROR_CHECK(_zh_ttp229_resources_init(config) == ESP_OK, ESP_FAIL, zh_vector_delete_back(&_vector); heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Resources initialization failed.");
@@ -218,10 +218,16 @@ esp_err_t zh_ttp229_deinit(zh_ttp229_handle_t **handle)
     ZH_ERROR_CHECK(zh_vector_get_size(&_vector, &vector_size) == ESP_OK, ESP_FAIL, NULL, "Touch pad deinitialization failed. Failed to get vector size.");
     if (vector_size == 0)
     {
-        vQueueDelete(_queue_handle);
-        _queue_handle = NULL;
-        vTaskDelete(zh_ttp229);
-        zh_ttp229 = NULL;
+        if (_queue_handle != NULL)
+        {
+            vQueueDelete(_queue_handle);
+            _queue_handle = NULL;
+        }
+        if (zh_ttp229 != NULL)
+        {
+            vTaskDelete(zh_ttp229);
+            zh_ttp229 = NULL;
+        }
         ZH_ERROR_CHECK(zh_vector_free(&_vector) == ESP_OK, ESP_FAIL, NULL, "Touch pad deinitialization failed. Free vector failed.");
     }
     heap_caps_free(*handle);
@@ -337,7 +343,7 @@ static esp_err_t _zh_ttp229_rmt_init(const zh_ttp229_init_config_t *config, zh_t
 static esp_err_t _zh_ttp229_resources_init(const zh_ttp229_init_config_t *config)
 {
     uint16_t vector_size = 0;
-    zh_vector_get_size(&_vector, &vector_size);
+    ZH_ERROR_CHECK(zh_vector_get_size(&_vector, &vector_size) == ESP_OK, ESP_FAIL, NULL, "Failed to get vector size.");
     if (vector_size == 1)
     {
         _queue_handle = xQueueCreate(config->queue_size, sizeof(zh_ttp229_queue_t));
@@ -349,7 +355,7 @@ static esp_err_t _zh_ttp229_resources_init(const zh_ttp229_init_config_t *config
 static esp_err_t _zh_ttp229_task_init(const zh_ttp229_init_config_t *config)
 {
     uint16_t vector_size = 0;
-    zh_vector_get_size(&_vector, &vector_size);
+    ZH_ERROR_CHECK(zh_vector_get_size(&_vector, &vector_size) == ESP_OK, ESP_FAIL, NULL, "Failed to get vector size.");
     if (vector_size == 1)
     {
         ZH_ERROR_CHECK(xTaskCreatePinnedToCore(&_zh_ttp229_isr_processing_task, "zh_ttp229_isr_processing", config->stack_size, NULL, config->task_priority, &zh_ttp229, tskNO_AFFINITY) == pdPASS,
@@ -384,7 +390,7 @@ static void IRAM_ATTR _zh_ttp229_isr_handler(void *arg)
     portYIELD_FROM_ISR();
 }
 
-static void IRAM_ATTR _zh_ttp229_isr_processing_task(void *pvParameter)
+static void _zh_ttp229_isr_processing_task(void *pvParameter)
 {
     (void)pvParameter;
     zh_ttp229_queue_t ttp229_queue = {0};

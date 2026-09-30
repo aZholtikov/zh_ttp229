@@ -62,6 +62,10 @@ extern "C"
 
     /**
      * @brief TTP229 touch pad work mode (number of pads).
+     *
+     * Selects the number of capacitive touch pads configured on the
+     * TTP229 controller. The value determines how many SCL clock pulses
+     * are generated during a read cycle.
      */
     typedef enum
     {

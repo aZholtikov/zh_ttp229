@@ -7,14 +7,14 @@
  * This module provides a FreeRTOS-based driver for the TTP229 touch
  * controller. It uses the RMT transmitter to generate SCL clock pulses
  * and the RMT receiver to capture SDO data, enabling reading of touch
- * status from 8 or 16 pad configurations. Each touch event triggers an
- * ISR that initiates RMT transfer and posts an event with the touched
- * pad number.
+ * status from 8 or 16 pad configurations. A positive edge on SDO triggers
+ * an ISR that starts the RMT transfer; a dedicated FreeRTOS task then
+ * decodes the touched pad number and posts an event with it.
  *
  * Key features:
  * - Supports 8-pad and 16-pad TTP229 configurations
  * - RMT-based SPI-like communication (no GPIO bit-banging)
- * - FreeRTOS task for debouncing and event dispatching
+ * - FreeRTOS task for decoding, debouncing and event dispatching
  * - Per-device unique numbering for multi-device support
  * - Error statistics tracking (RMT, queue, stack)
  */
@@ -22,6 +22,7 @@
 #pragma once
 
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/rmt_tx.h"
@@ -34,11 +35,11 @@
     {                                           \
         .task_priority = 1,                     \
         .stack_size = configMINIMAL_STACK_SIZE, \
-        .queue_size = 1,                        \
+        .queue_size = 5,                        \
         .work_mode = ZH_TTP229_8_PAD,           \
-        .rmt_tx_start_delay = 0,                \
+        .rmt_tx_start_delay = 15,               \
         .debounce_time = 100,                   \
-        .device_number = 0,                     \
+        .device_number = 1,                     \
         .scl_gpio = GPIO_NUM_MAX,               \
         .sdo_gpio = GPIO_NUM_MAX}
 
@@ -48,7 +49,11 @@ extern "C"
 #endif
 
     /**
-     * @brief External task handle for the TTP229 ISR processing task.
+     * @brief Handle of the shared TTP229 event processing task.
+     *
+     * Created when the first device is initialized and set back to NULL
+     * when the last device is deinitialized or the first device
+     * initialization fails.
      */
     extern TaskHandle_t zh_ttp229;
 
@@ -124,42 +129,44 @@ extern "C"
     /**
      * @brief Initialize the TTP229 touch pad driver.
      *
-     * Allocates a handle, validates the configuration, initializes RMT
-     * TX/RMT channels, installs the GPIO ISR handler, and creates the
-     * processing task. Supports multiple devices via unique device
-     * numbers.
+     * Allocates a handle, validates the configuration, creates the shared
+     * queue and the processing task on the first device, initializes GPIO
+     * with the ISR handler, and creates the RMT TX/RX channels. Supports
+     * multiple devices via unique device numbers.
      *
      * @param[in] config Pointer to initialization configuration (must not be NULL)
-     * @param[out] handle Pointer to unique touch pad handle (must not be NULL)
+     * @param[out] handle Pointer to a handle location that must be NULL on input (must not be NULL)
      *
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG if config or handle is NULL, or if any configuration value is out of range
-     * @return ESP_ERR_INVALID_STATE if the device is already initialized
-     * @return ESP_ERR_NO_MEM if memory allocation fails
-     * @return ESP_FAIL on resource allocation or peripheral failure
+     * @return ESP_ERR_INVALID_STATE if *handle is not NULL
+     * @return ESP_ERR_NO_MEM if handle allocation fails
+     * @return ESP_FAIL if creating the shared resources fails, or on GPIO or RMT initialization failure
      */
     esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle_t **handle);
 
     /**
      * @brief Deinitialize a TTP229 touch pad instance.
      *
-     * Disables RMT channels, removes the GPIO ISR handler, frees the
-     * handle, and removes the device from the internal device list.
-     * The processing task and shared resources are deleted only when
-     * the last device is deinitialized.
+     * Removes the device from the internal device list, removes the GPIO
+     * ISR handler, disables and deletes the RMT channels and the encoder,
+     * resets the GPIO pins, and frees the handle. The processing task,
+     * the queue, and the device list are deleted only when the last
+     * device is deinitialized.
      *
      * @param[in,out] handle Pointer to unique touch pad handle (must not be NULL)
      *
      * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG if handle is NULL or points to a device not found in the internal list
+     * @return ESP_ERR_INVALID_ARG if handle or *handle is NULL
+     * @return ESP_FAIL if the device is not found in the internal device list, or if deleting the device list entries or the shared resources fails
      */
     esp_err_t zh_ttp229_deinit(zh_ttp229_handle_t **handle);
 
     /**
      * @brief Retrieve a pointer to the current error statistics.
      *
-     * The returned pointer remains valid until zh_ttp229_reset_stats()
-     * is called or the module is deinitialized.
+     * The returned pointer refers to a module static structure and
+     * remains valid for the lifetime of the application.
      *
      * @return Pointer to the static zh_ttp229_stats_t structure
      */

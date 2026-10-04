@@ -15,20 +15,6 @@
 1. After start/reset first touch not work.
 2. Multi touch not supported.
 
-## Note
-
-Enable the following settings in menuconfig:
-
-```text
-CONFIG_GPIO_CTRL_FUNC_IN_IRAM
-CONFIG_RMT_ENCODER_FUNC_IN_IRAM
-CONFIG_RMT_TX_ISR_HANDLER_IN_IRAM
-CONFIG_RMT_RX_ISR_HANDLER_IN_IRAM
-CONFIG_RMT_RECV_FUNC_IN_IRAM
-CONFIG_RMT_TX_ISR_CACHE_SAFE
-CONFIG_RMT_RX_ISR_CACHE_SAFE
-```
-
 ## Using
 
 In an existing project, run the following command to install the components:
@@ -58,6 +44,7 @@ void zh_ttp229_event_handler(void *arg, esp_event_base_t event_base, int32_t eve
 void app_main(void)
 {
     esp_log_level_set("zh_ttp229", ESP_LOG_ERROR);
+    esp_log_level_set("zh_vector", ESP_LOG_ERROR);
     esp_event_loop_create_default();
     esp_event_handler_instance_register(ZH_TTP229, ESP_EVENT_ANY_ID, &zh_ttp229_event_handler, NULL, NULL);
     zh_ttp229_init_config_t config = ZH_TTP229_INIT_CONFIG_DEFAULT();

@@ -42,7 +42,7 @@ struct _zh_ttp229_handle_t
     uint8_t rmt_tx_start_delay;        /*!< Time between SDO low-level pulse and RMT TX start (in microseconds) */
     uint8_t scl_symbols_count;         /*!< Number of SCL clock symbols to transmit (8 or 16) */
     uint16_t debounce_time;            /*!< Button debounce time in milliseconds */
-    TickType_t last_event_tick;        /*!< Tick count of the last posted event, (TickType_t)-1 before first event */
+    TickType_t last_event_tick;        /*!< Tick count of the last posted event, -1 before first event */
     volatile bool rx_needs_reset;      /*!< Flag requesting RMT RX channel reset, set from ISR context */
     rmt_symbol_word_t scl_symbols[16]; /*!< Precomputed SCL clock symbols for RMT TX (up to 16 pads) */
     rmt_symbol_word_t rx_symbols;      /*!< Single RMT RX symbol buffer captured from the SDO line */
@@ -206,13 +206,24 @@ esp_err_t zh_ttp229_init(const zh_ttp229_init_config_t *config, zh_ttp229_handle
         ZH_ERROR_CHECK(zh_vector_init(&_vector, (uint16_t)sizeof(uint8_t)) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Failed to create vector.");
     }
     ZH_ERROR_CHECK(zh_vector_push_back(&_vector, &config->device_number) == ESP_OK, ESP_FAIL, heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Failed to add vector data.");
-    ZH_ERROR_CHECK(_zh_ttp229_resources_init(config) == ESP_OK, ESP_FAIL, _zh_ttp229_rollback_task_and_resources(); zh_vector_delete_back(&_vector); heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Resources initialization failed.");
-    ZH_ERROR_CHECK(_zh_ttp229_task_init(config) == ESP_OK, ESP_FAIL, _zh_ttp229_rollback_task_and_resources(); zh_vector_delete_back(&_vector); heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Processing task initialization failed.");
+    ZH_ERROR_CHECK(_zh_ttp229_resources_init(config) == ESP_OK, ESP_FAIL, _zh_ttp229_rollback_task_and_resources();
+                   ZH_ERROR_CHECK_CONT(zh_vector_delete_back(&_vector) == ESP_OK, NULL, "Failed delete vector data.");
+                   heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Resources initialization failed.");
+    ZH_ERROR_CHECK(_zh_ttp229_task_init(config) == ESP_OK, ESP_FAIL, _zh_ttp229_rollback_task_and_resources();
+                   ZH_ERROR_CHECK_CONT(zh_vector_delete_back(&_vector) == ESP_OK, NULL, "Failed delete vector data.");
+                   heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. Processing task initialization failed.");
     (*handle)->debounce_time = config->debounce_time;
-    (*handle)->last_event_tick = (TickType_t)-1;
-    ZH_ERROR_CHECK(_zh_ttp229_gpio_init(config, *handle) == ESP_OK, ESP_FAIL, _zh_ttp229_rollback_task_and_resources(); zh_vector_delete_back(&_vector); heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. GPIO initialization failed.");
-    ZH_ERROR_CHECK(_zh_ttp229_rmt_init(config, *handle) == ESP_OK, ESP_FAIL, gpio_isr_handler_remove((*handle)->sdo_gpio); gpio_reset_pin((*handle)->sdo_gpio); gpio_reset_pin((*handle)->scl_gpio);
-                   _zh_ttp229_rollback_task_and_resources(); zh_vector_delete_back(&_vector); heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. RMT initialization failed.");
+    (*handle)->last_event_tick = -1;
+    ZH_ERROR_CHECK(_zh_ttp229_gpio_init(config, *handle) == ESP_OK, ESP_FAIL, _zh_ttp229_rollback_task_and_resources();
+                   ZH_ERROR_CHECK_CONT(zh_vector_delete_back(&_vector) == ESP_OK, NULL, "Failed delete vector data.");
+                   heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. GPIO initialization failed.");
+    ZH_ERROR_CHECK(_zh_ttp229_rmt_init(config, *handle) == ESP_OK, ESP_FAIL,
+                   ZH_ERROR_CHECK_CONT(gpio_isr_handler_remove((*handle)->sdo_gpio) == ESP_OK, NULL, "Remove GPIO isr handler failed.");
+                   ZH_ERROR_CHECK_CONT(gpio_reset_pin((*handle)->sdo_gpio) == ESP_OK, NULL, "Reset GPIO failed.");
+                   ZH_ERROR_CHECK_CONT(gpio_reset_pin((*handle)->scl_gpio) == ESP_OK, NULL, "Reset GPIO failed.");
+                   _zh_ttp229_rollback_task_and_resources();
+                   ZH_ERROR_CHECK_CONT(zh_vector_delete_back(&_vector) == ESP_OK, NULL, "Failed delete vector data.");
+                   heap_caps_free(*handle); *handle = NULL, "Touch pad initialization failed. RMT initialization failed.");
     if (_stats.min_stack_size == 0)
     {
         _stats.min_stack_size = config->stack_size;

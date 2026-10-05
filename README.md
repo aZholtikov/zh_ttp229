@@ -55,7 +55,7 @@ void app_main(void)
     config.debounce_time = 300;
     // The time between the low-level pulse in the interrupt and the actual start time of the RMT signal generator (in microseconds).
     // It is determined experimentally or using a logic analyzer.
-    config.rmt_tx_start_delay = 19;
+    config.rmt_tx_start_delay = 23;
     zh_ttp229_init(&config, &ttp229_handle);
     for (;;)
     {
